@@ -13,15 +13,27 @@ library(annotate)
 library(GO.db)
 library(tmod)
 
+backgroundGenesSource <- "consistent" 
+#backgroundGenesSource <- "Zeisel" #uncomment to do GO analyses within the Zeisel gene lists
 
 setwd("/Users/lfrench/Desktop/results/CellTypeThickness/CellTypeLists")
 
 sheetNames <- c("Astrocyte","Endothelial","Ependymal","Microglia","Mural","CA1.Pyramidal","Interneuron","S1.Pyramidal","Oligodendrocyte")
 
-consistentGenes <-read_tsv("./human/BrainSpanCorrelations_p_less_than_0.05.tsv")$GeneSymbol  #genes with freesurfer/HBA to BrainSpan consistency
+if (backgroundGenesSource == "consistent") {
+  backgroundGenes <-read_tsv("./human/BrainSpanCorrelations_p_less_than_0.05.tsv")$GeneSymbol  #genes with freesurfer/HBA to BrainSpan consistency
+}
 excelFileName <- "./human/SupplementaryTable1xlsx.xlsx" #Zeisel genes with freesurfer consistency
 
-length(consistentGenes)
+if (backgroundGenesSource == "Zeisel") {
+  backgroundGenes <- c()
+  for (sheetName in sheetNames) {
+    cellSheet <- tbl_df(read.xlsx(excelFileName,sheetName = sheetName, stringsAsFactors=F))
+    backgroundGenes <- c(backgroundGenes,cellSheet$Gene)
+  }
+}
+
+length(backgroundGenes)
 
 #load gene ontology
 if (exists("geneSetsGO") && length(geneSetsGO$MODULES2GENES) > 1000 ) { #assume it's already loaded - needs a fix to see if the variable is declared
@@ -45,7 +57,7 @@ if (exists("geneSetsGO") && length(geneSetsGO$MODULES2GENES) > 1000 ) { #assume 
     geneIDs <- unique(unlist(goGroup, use.names=F))  #discard evidence codes
     genesymbols <- unique(getSYMBOL(geneIDs, data='org.Hs.eg'))
     
-    genesymbols <- intersect(genesymbols, consistentGenes)
+    genesymbols <- intersect(genesymbols, backgroundGenes)
     if (!(length(genesymbols) > 5 & length(genesymbols) < 200)) next();
     if (Ontology(goGroupName) == "CC") next();
     
@@ -61,11 +73,11 @@ for (sheetName in sheetNames) {
   cellSheet <- tbl_df(read.xlsx(excelFileName,sheetName = sheetName, stringsAsFactors=F))
   cellTypeGenes <- cellSheet$Gene
   #test enrichment
-  result <- tbl_df(tmodHGtest(fg=cellTypeGenes, bg=consistentGenes, mset=geneSetsGO, qval = 1.01, filter = T))
+  result <- tbl_df(tmodHGtest(fg=cellTypeGenes, bg=backgroundGenes, mset=geneSetsGO, qval = 1.01, filter = T))
   result <- mutate(rowwise(result), ontology = Ontology(ID))
   result %<>% rename("Overlapping genes" = b, "GO group size" = B) %<>% dplyr::select(-N)
   #write enrichment
-  write.csv(result, paste0("./human/",sheetName, ".Zeisel.GO.results.csv"), row.names = F)
+  write.csv(result, paste0("./human/ZeiselBackGround/",sheetName, ".Zeisel.GO.results.csv"), row.names = F)
 }
 
 #merge the two neuron types
