@@ -28,7 +28,7 @@ if (exists("geneSetsGO") && length(geneSetsGO$MODULES2GENES) > 1000 ) { #assume 
 } else {
   go_object <- as.list(org.Mm.egGO2ALLEGS)
   
-  symbolsInGO <- getSYMBOL(unique(unlist(go_object)), data='org.Mm.eg')
+  symbolsInGO <- getSYMBOL(unique(unlist(go_object)), data='org.Mm.eg') #doesn't account for not using CC
   
   #build GO sets for tmod -slow
   tmodNames <- data.frame()
