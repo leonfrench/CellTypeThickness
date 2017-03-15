@@ -1,0 +1,15 @@
+Desikan-Killiany (Allen Brain) Atlas,FreesurferShortName,BrainSpan atlas
+rostral anterior cingulate cortex,ctx.lh.rostralanteriorcingulate,anterior (rostral) cingulate (medial prefrontal) cortex
+rostral middle frontal gyrus,ctx.lh.rostralmiddlefrontal,dorsolateral prefrontal cortex
+superior temporal gyrus and banks of the superior temporal sulcus,ctx.lh.bankssts,posterior (caudal) superior temporal cortex (area 22c)
+superior temporal gyrus and banks of the superior temporal sulcus,ctx.lh.superiortemporal,posterior (caudal) superior temporal cortex (area 22c)
+inferior parietal cortex,ctx.lh.inferiorparietal,posteroventral (inferior) parietal cortex
+transverse temporal cortex,ctx.lh.transversetemporal,primary auditory cortex (core)
+pericalcarine cortex,ctx.lh.pericalcarine,"primary visual cortex (striate cortex, area V1/17)"
+parstriangularis and parsorbitalis,ctx.lh.parsorbitalis,ventrolateral prefrontal cortex
+parstriangularis and parsorbitalis,ctx.lh.parstriangularis,ventrolateral prefrontal cortex
+inferior temporal gyrus,ctx.lh.inferiortemporal,"inferolateral temporal cortex (area TEv, area 20)"
+lateral and medial orbitofrontal cortex,ctx.lh.medialorbitofrontal,orbital frontal cortex
+lateral and medial orbitofrontal cortex,ctx.lh.lateralorbitofrontal,orbital frontal cortex
+precentral gyrus,ctx.lh.precentral,"primary motor cortex (area M1, area 4)"
+postcentral gyrus,ctx.lh.postcentral,"primary somatosensory cortex (area S1, areas 3,1,2)"
