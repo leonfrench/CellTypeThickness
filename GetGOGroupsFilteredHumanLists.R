@@ -6,7 +6,6 @@ library(xlsx)
 library(dplyr)
 library(readr)
 
-library(homologene) #install via install_github('oganm/homologene')
 library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(annotate)
@@ -16,21 +15,16 @@ library(tmod)
 backgroundGenesSource <- "consistent" 
 #backgroundGenesSource <- "Zeisel" #uncomment to do GO analyses within the Zeisel gene lists
 
-setwd("/Users/lfrench/Desktop/results/CellTypeThickness/CellTypeLists")
+setwd("/Users/lfrench/Desktop/results/CellTypeThickness/")
 
-sheetNames <- c("Astrocyte","Endothelial","Ependymal","Microglia","Mural","CA1.Pyramidal","Interneuron","S1.Pyramidal","Oligodendrocyte")
+referenceSet <- read_tsv("Reference_Consistent_Genes_ObtainedBy2StageFiltering.tsv")
 
 if (backgroundGenesSource == "consistent") {
-  backgroundGenes <-read_tsv("./human/BrainSpanCorrelations_p_less_than_0.05.tsv")$GeneSymbol  #genes with freesurfer/HBA to BrainSpan consistency
+  backgroundGenes <- referenceSet$GeneSymbol  #genes with freesurfer/HBA to BrainSpan consistency
 }
-excelFileName <- "./human/SupplementaryTable1xlsx.xlsx" #Zeisel genes with freesurfer consistency
 
 if (backgroundGenesSource == "Zeisel") {
-  backgroundGenes <- c()
-  for (sheetName in sheetNames) {
-    cellSheet <- tbl_df(read.xlsx(excelFileName,sheetName = sheetName, stringsAsFactors=F))
-    backgroundGenes <- c(backgroundGenes,cellSheet$Gene)
-  }
+  backgroundGenes <- referenceSet %>% filter(!is.na(CellType)) %>% .$GeneSymbol
 }
 
 length(backgroundGenes)
@@ -68,21 +62,21 @@ if (exists("geneSetsGO") && length(geneSetsGO$MODULES2GENES) > 1000 ) { #assume 
   geneSetsGO <- makeTmod(modules = tmodNames, modules2genes = modules2genes)
 }
 
-
-for (sheetName in sheetNames) {
-  cellSheet <- tbl_df(read.xlsx(excelFileName,sheetName = sheetName, stringsAsFactors=F))
-  cellTypeGenes <- cellSheet$Gene
+cellTypes <- unique(referenceSet %>% filter(!is.na(CellType)) %>% .$CellType)
+for (cellTypeName in cellTypes) {
+  cellSheet <- subset(referenceSet, CellType == cellTypeName)
+  cellTypeGenes <- cellSheet$GeneSymbol
   #test enrichment
   result <- tbl_df(tmodHGtest(fg=cellTypeGenes, bg=backgroundGenes, mset=geneSetsGO, qval = 1.01, filter = T))
   result <- mutate(rowwise(result), ontology = Ontology(ID))
   result %<>% rename("Overlapping genes" = b, "GO group size" = B) %<>% dplyr::select(-N)
   #write enrichment
-  write.csv(result, paste0("./human/ZeiselBackGround/",sheetName, ".Zeisel.GO.results.csv"), row.names = F)
+  write.csv(result, paste0("./",cellTypeName, ".Zeisel.GO.results.csv"), row.names = F)
 }
 
 #merge the two neuron types
-CA1Excite <- read_csv("./human/CA1.Pyramidal.Zeisel.GO.results.csv") 
-hippExcite <- read_csv("./human/S1.Pyramidal.Zeisel.GO.results.csv") 
+CA1Excite <- read_csv("./CA1.Pyramidal.Zeisel.GO.results.csv") 
+hippExcite <- read_csv("./S1.Pyramidal.Zeisel.GO.results.csv") 
 
 #merge of the CA1 and S1 pyramidal neuron results
 merged <- inner_join(CA1Excite, hippExcite, by="ID", suffix = c(".CA1", ".S1"))
@@ -90,4 +84,4 @@ merged %<>% select(-Title.S1, -`GO group size.S1`, -`ontology.S1`)
 merged %<>% mutate(percentOverlapCA1 = `Overlapping genes.CA1`/n.CA1)
 merged %<>% mutate(percentOverlapS1 = `Overlapping genes.S1`/n.S1)
 merged %<>% mutate(percentOverlapDiff = abs(percentOverlapCA1 - percentOverlapS1))
-write.csv(merged, paste0("/Users/lfrench/Desktop/results/ZeiselCortex/filteredLists/CA1.vrs.S1.Zeisel.GO.results.csv"), row.names = F)
+write.csv(merged, paste0("./CA1.vrs.S1.Zeisel.GO.results.csv"), row.names = F)

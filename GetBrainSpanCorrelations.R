@@ -5,21 +5,22 @@ library(readr)
 library(ggplot2)
 library(reshape2)
 
+#download from the BrainSpan website
 pathToBrainSpanExpression <- "/Users/lfrench/Downloads/Old Downloads/merge methods test/gene_array_matrix_csv/" #exon array data
 setwd("/Users/lfrench/Desktop/results/CellTypeThickness")
 
-consistentGenes <-read_tsv("./CellTypeLists/human/AllenHBA_DK_ExpressionMatrix_GenesAbove0.446Threshold.tsv")$Gene 
+consistentGenes <- read_tsv("./AllenHBA_DK_ExpressionMatrix.tsv") %>% filter(`Average donor correlation to median` > 0.446) %>% .$X1
 length(consistentGenes)
 
 #load brainspan expression
-source("./R/LoadBrainSpanExpressionFunctions.R")
+source("./LoadBrainSpanExpressionFunctions.R")
 
 #load expression (slow)
 expression <- loadBrainSpanExpression(pathToBrainSpanExpression, doRankTransform = FALSE)
 donorMetaData <- getExpressionColumnData(pathToBrainSpanExpression)
 
 genesOfInterest <- consistentGenes
-setdiff(genesOfInterest, rownames(expression))
+length(setdiff(genesOfInterest, rownames(expression)))
 genesOfInterest <- intersect(genesOfInterest, rownames(expression))
 samplesToPlot <-  getExpressionColumnData(pathToBrainSpanExpression) 
 
@@ -41,7 +42,8 @@ brainSpanExpression$region <- donorMetaData[brainSpanExpression$regionAndDonor,"
 brainSpanExpression$donor <- donorMetaData[brainSpanExpression$regionAndDonor,"donor_name"]
 
 #filter for 11 regions and average
-mapping <- read_csv("./data/RegionMapping.csv")
+mapping <- read_csv("./BrainSpanToHBARegionMapping.csv")
+mapping$FreesurferShortName <- gsub("[.]","-",mapping$FreesurferShortName)
 
 brainSpanExpression <- tbl_df(brainSpanExpression)
 brainSpanExpression %<>% filter(region %in% mapping$`BrainSpan atlas`)
@@ -51,7 +53,7 @@ brainSpanExpression %<>% filter(GeneSymbol %in% genesOfInterest)
 brainSpanExpression %<>% group_by(region, GeneSymbol) %>% summarise(median = median(value))
 
 #load Allen HBA data from freesurfer report
-freeSurferExp <-read_tsv("./CellTypeLists/human/AllenHBA_DK_ExpressionMatrix_GenesAbove0.446Threshold.tsv")
+freeSurferExp <-read_tsv("./AllenHBA_DK_ExpressionMatrix.tsv") %>% rename(Gene=X1)
 colsToUse <- c("Gene", colnames(freeSurferExp)[colnames(freeSurferExp) %in% mapping$FreesurferShortName])
 freeSurferExp <- freeSurferExp[,colsToUse]
 freeSurferExp %<>% gather("region", "expression", -Gene)
@@ -64,7 +66,7 @@ combinedExp <- inner_join(brainSpanExpression, freeSurferExp, by=c("GeneSymbol"=
 
 correlations <- combinedExp %>% group_by(GeneSymbol) %>% summarise(correlation = cor(median.brainSpan, median.AHBA), pvalue = cor.test(median.brainSpan, median.AHBA, alternative = "greater")$p.value)
 correlations %>% arrange(pvalue)
-write.csv(correlations, "./data/BrainSpanCorrelations.csv", row.names = F, quote=F)
+write.csv(correlations, "./BrainSpanCorrelations.csv", row.names = F, quote=F)
 
 #test with nr3c1
 nr3c1 <- combinedExp %>% filter(GeneSymbol == "NR3C1")
